@@ -104,6 +104,8 @@ local CONF_INFERENCES = {
 
   proxy_access_log = {typ = "string"},
   proxy_error_log = {typ = "string"},
+  mock_proxy_access_log = {typ = "string"},
+  mock_proxy_error_log = {typ = "string"},
   admin_access_log = {typ = "string"},
   admin_error_log = {typ = "string"},
   log_level = {enum = {"debug", "info", "notice", "warn",
@@ -371,7 +373,10 @@ local function parse_option_flags(value, flags)
 
     if count > 0 then
       result[flag] = true
-      sanitized = sanitized .. " " .. flag
+
+      if flag ~= "mock" then
+        sanitized = sanitized .. " " .. flag
+      end
 
     else
       result[flag] = false
@@ -388,9 +393,15 @@ end
 -- @value list of entries (strings)
 -- @return list of parsed entries, each entry having fields `ip` (normalized string)
 -- `port` (number), `ssl` (bool), `http2` (bool), `listener` (string, full listener)
-local function parse_listeners(values)
-  local list = {}
+local function parse_listeners(values, extra_flags)
+  local list  = {}
   local flags = { "ssl", "http2", "proxy_protocol" }
+  if extra_flags then
+    for _, flag in ipairs(extra_flags) do
+      table.insert(flags, flag)
+    end
+  end
+
   local usage = "must be of form: [off] | <ip>:<port> [" ..
                 table.concat(flags, "] [") .. "], [... next entry ...]"
 
@@ -556,19 +567,9 @@ local function load(path, custom_conf)
     -- intermediate Kong config file in the prefix directory
     local mt = { __tostring = function() return "" end }
 
-    conf.proxy_listeners, err = parse_listeners(conf.proxy_listen)
+    conf.proxy_listeners, err = parse_listeners(conf.proxy_listen, { "mock" })
     if err then
       return nil, "proxy_listen " .. err
-    end
-
-    setmetatable(conf.proxy_listeners, mt)  -- do not pass on, parse again
-    conf.proxy_ssl_enabled = false
-
-    for _, listener in ipairs(conf.proxy_listeners) do
-      if listener.ssl == true then
-        conf.proxy_ssl_enabled = true
-        break
-      end
     end
 
     conf.admin_listeners, err = parse_listeners(conf.admin_listen)
@@ -576,9 +577,36 @@ local function load(path, custom_conf)
       return nil, "admin_listen " .. err
     end
 
-    setmetatable(conf.admin_listeners, mt)  -- do not pass on, parse again
-    conf.admin_ssl_enabled = false
+    conf.mock_proxy_listeners = {}
 
+    setmetatable(conf.proxy_listeners,      mt)  -- do not pass on, parse again
+    setmetatable(conf.mock_proxy_listeners, mt)  -- do not pass on, parse again
+    setmetatable(conf.admin_listeners,      mt)  -- do not pass on, parse again
+
+    for i = #conf.proxy_listeners, 1, -1 do
+      if conf.proxy_listeners[i] and conf.proxy_listeners[i].mock == true then
+        table.insert(conf.mock_proxy_listeners, 1, conf.proxy_listeners[i])
+        table.remove(conf.proxy_listeners, i)
+      end
+    end
+
+    conf.proxy_ssl_enabled = false
+    for _, listener in ipairs(conf.proxy_listeners) do
+      if listener.ssl == true then
+        conf.proxy_ssl_enabled = true
+        break
+      end
+    end
+
+    conf.mock_proxy_ssl_enabled  = false
+    for _, listener in ipairs(conf.mock_proxy_listeners) do
+      if listener.ssl == true then
+        conf.mock_proxy_ssl_enabled = true
+        break
+      end
+    end
+
+    conf.admin_ssl_enabled = false
     for _, listener in ipairs(conf.admin_listeners) do
       if listener.ssl == true then
         conf.admin_ssl_enabled = true
