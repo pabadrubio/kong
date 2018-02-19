@@ -387,6 +387,50 @@ local function proxy_ssl_client(timeout)
   return client
 end
 
+--- Returns the mock proxy port.
+-- @param ssl (boolean) if `true` returns the ssl port
+local function get_mock_proxy_port(ssl)
+  if ssl == nil then ssl = false end
+  for _, entry in ipairs(conf.mock_proxy_listeners) do
+    if entry.ssl == ssl then
+      return entry.port
+    end
+  end
+  error("No proxy port found for ssl=" .. tostring(ssl), 2)
+end
+
+--- Returns the mock proxy ip.
+-- @param ssl (boolean) if `true` returns the ssl ip address
+local function get_mock_proxy_ip(ssl)
+  if ssl == nil then ssl = false end
+  for _, entry in ipairs(conf.mock_proxy_listeners) do
+    if entry.ssl == ssl then
+      return entry.ip
+    end
+  end
+  error("No proxy ip found for ssl=" .. tostring(ssl), 2)
+end
+
+--- returns a pre-configured `http_client` for the Kong mock proxy port.
+-- @name mock_proxy_client
+local function mock_proxy_client(timeout)
+  local mock_proxy_ip = get_mock_proxy_ip(false)
+  local mock_proxy_port = get_mock_proxy_port(false)
+  assert(mock_proxy_ip, "No http-proxy found in the configuration")
+  return http_client(mock_proxy_ip, mock_proxy_port, timeout)
+end
+
+--- returns a pre-configured `http_client` for the Kong SSL mock proxy port.
+-- @name mock_proxy_ssl_client
+local function mock_proxy_ssl_client(timeout)
+  local mock_proxy_ip = get_mock_proxy_ip(true)
+  local mock_proxy_port = get_mock_proxy_port(true)
+  assert(mock_proxy_ip, "No https-proxy found in the configuration")
+  local client = http_client(mock_proxy_ip, mock_proxy_port, timeout)
+  assert(client:ssl_handshake())
+  return client
+end
+
 --- returns a pre-configured `http_client` for the Kong admin port.
 -- @name admin_client
 local function admin_client(timeout)
@@ -1105,8 +1149,12 @@ return {
   get_proxy_ip = get_proxy_ip,
   get_proxy_port = get_proxy_port,
   proxy_client = proxy_client,
-  admin_client = admin_client,
   proxy_ssl_client = proxy_ssl_client,
+  get_mock_proxy_ip = get_mock_proxy_ip,
+  get_mock_proxy_port = get_mock_proxy_port,
+  mock_proxy_client = mock_proxy_client,
+  mock_proxy_ssl_client = mock_proxy_ssl_client,
+  admin_client = admin_client,
   admin_ssl_client = admin_ssl_client,
   prepare_prefix = prepare_prefix,
   clean_prefix = clean_prefix,
