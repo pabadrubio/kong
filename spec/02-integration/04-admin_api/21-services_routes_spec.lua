@@ -353,7 +353,7 @@ for _, strategy in helpers.each_strategy() do
         end)
 
         describe("POST", function()
-          it_content_types("creates a plugin config", function(content_type)
+          it_content_types("creates a plugin config for a Service", function(content_type)
             return function()
               local res = assert(client:send {
                 method = "POST",
@@ -362,16 +362,16 @@ for _, strategy in helpers.each_strategy() do
                   name = "key-auth",
                   ["config.key_names"] = "apikey,key"
                 },
-                headers = {["Content-Type"] = content_type}
+                headers = { ["Content-Type"] = content_type }
               })
               local body = assert.res_status(201, res)
               local json = cjson.decode(body)
               assert.equal("key-auth", json.name)
-              assert.same({"apikey", "key"}, json.config.key_names)
+              assert.same({ "apikey", "key" }, json.config.key_names)
             end
           end)
 
-          it_content_types("references API by name too", function(content_type)
+          it_content_types("references a Service by name", function(content_type)
             return function()
               local res = assert(client:send {
                 method = "POST",
@@ -380,12 +380,12 @@ for _, strategy in helpers.each_strategy() do
                   name = "key-auth",
                   ["config.key_names"] = "apikey,key"
                 },
-                headers = {["Content-Type"] = content_type}
+                headers = { ["Content-Type"] = content_type }
               })
               local body = assert.res_status(201, res)
               local json = cjson.decode(body)
               assert.equal("key-auth", json.name)
-              assert.same({"apikey", "key"}, json.config.key_names)
+              assert.same({ "apikey", "key" }, json.config.key_names)
             end
           end)
 
@@ -395,7 +395,9 @@ for _, strategy in helpers.each_strategy() do
             end)
 
             after_each(function()
-              if client then client:close() end
+              if client then
+                client:close()
+              end
             end)
 
             it_content_types("handles invalid input", function(content_type)
@@ -404,7 +406,7 @@ for _, strategy in helpers.each_strategy() do
                   method = "POST",
                   path = "/services/" .. service.id .. "/plugins",
                   body = {},
-                  headers = {["Content-Type"] = content_type}
+                  headers = { ["Content-Type"] = content_type }
                 })
                 local body = assert.res_status(400, res)
                 local json = cjson.decode(body)
@@ -412,16 +414,16 @@ for _, strategy in helpers.each_strategy() do
               end
             end)
 
-            it_content_types("returns 409 on conflict", function(content_type)
+            it_content_types("returns 409 on conflict (same plugin name)", function(content_type)
               return function()
                 -- insert initial plugin
                 local res = assert(client:send {
                   method = "POST",
                   path = "/services/" .. service.id .. "/plugins",
                   body = {
-                    name="basic-auth",
+                    name = "basic-auth",
                   },
-                  headers = {["Content-Type"] = content_type}
+                  headers = { ["Content-Type"] = content_type }
                 })
                 assert.response(res).has.status(201)
                 assert.response(res).has.jsonbody()
@@ -431,9 +433,9 @@ for _, strategy in helpers.each_strategy() do
                   method = "POST",
                   path = "/services/" .. service.id .. "/plugins",
                   body = {
-                    name="basic-auth",
+                    name = "basic-auth",
                   },
-                  headers = {["Content-Type"] = content_type}
+                  headers = { ["Content-Type"] = content_type }
                 })
                 assert.response(res).has.status(409)
                 local json = assert.response(res).has.jsonbody()
@@ -441,16 +443,16 @@ for _, strategy in helpers.each_strategy() do
               end
             end)
 
-            it_content_types("returns 409 on id conflict #xxx", function(content_type)
+            it_content_types("returns 409 on id conflict (same plugin id)", function(content_type)
               return function()
                 -- insert initial plugin
                 local res = assert(client:send {
                   method = "POST",
-                  path = "/services/"..service.id.."/plugins",
+                  path = "/services/" .. service.id .. "/plugins",
                   body = {
-                    name="basic-auth",
+                    name = "basic-auth",
                   },
-                  headers = {["Content-Type"] = content_type}
+                  headers = { ["Content-Type"] = content_type }
                 })
                 local body = assert.res_status(201, res)
                 local plugin = cjson.decode(body)
@@ -458,12 +460,12 @@ for _, strategy in helpers.each_strategy() do
                 -- do it again, to provoke the error
                 local conflict_res = assert(client:send {
                   method = "POST",
-                  path = "/services/"..service.id.."/plugins",
+                  path = "/services/" .. service.id .. "/plugins",
                   body = {
-                    name="key-auth",
+                    name = "key-auth",
                     id = plugin.id,
                   },
-                  headers = {["Content-Type"] = content_type}
+                  headers = { ["Content-Type"] = content_type }
                 })
                 local conflict_body = assert.res_status(409, conflict_res)
                 local json = cjson.decode(conflict_body)
@@ -484,12 +486,12 @@ for _, strategy in helpers.each_strategy() do
                   ["config.key_names"] = "apikey,key",
                   created_at = 1461276890000
                 },
-                headers = {["Content-Type"] = content_type}
+                headers = { ["Content-Type"] = content_type }
               })
               local body = assert.res_status(201, res)
               local json = cjson.decode(body)
               assert.equal("key-auth", json.name)
-              assert.same({"apikey", "key"}, json.config.key_names)
+              assert.same({ "apikey", "key" }, json.config.key_names)
             end
           end)
 
@@ -503,7 +505,7 @@ for _, strategy in helpers.each_strategy() do
                   ["config.key_names"] = "apikey,key",
                   created_at = 1461276890000
                 },
-                headers = {["Content-Type"] = content_type}
+                headers = { ["Content-Type"] = content_type }
               })
               local body = assert.res_status(201, res)
               local json = cjson.decode(body)
@@ -517,12 +519,12 @@ for _, strategy in helpers.each_strategy() do
                   ["config.key_names"] = "key",
                   created_at = 1461276890000
                 },
-                headers = {["Content-Type"] = content_type}
+                headers = { ["Content-Type"] = content_type }
               })
               body = assert.res_status(200, res)
               json = cjson.decode(body)
               assert.equal("key-auth", json.name)
-              assert.same({"key"}, json.config.key_names)
+              assert.same({ "key" }, json.config.key_names)
             end
           end)
 
@@ -531,10 +533,10 @@ for _, strategy in helpers.each_strategy() do
               local plugin = assert(dao.plugins:insert {
                 name = "key-auth",
                 service_id = service.id,
-                config = {hide_credentials = true}
+                config = { hide_credentials = true }
               })
               assert.True(plugin.config.hide_credentials)
-              assert.same({"apikey"}, plugin.config.key_names)
+              assert.same({ "apikey" }, plugin.config.key_names)
 
               local res = assert(client:send {
                 method = "PUT",
@@ -545,7 +547,7 @@ for _, strategy in helpers.each_strategy() do
                   ["config.key_names"] = "apikey,key",
                   created_at = 1461276890000
                 },
-                headers = {["Content-Type"] = content_type}
+                headers = { ["Content-Type"] = content_type }
               })
               local body = assert.res_status(200, res)
               local json = cjson.decode(body)
@@ -556,7 +558,7 @@ for _, strategy in helpers.each_strategy() do
                 name = plugin.name
               })
               assert.False(plugin.config.hide_credentials)
-              assert.same({"apikey", "key"}, plugin.config.key_names)
+              assert.same({ "apikey", "key" }, plugin.config.key_names)
             end
           end)
 
@@ -566,7 +568,7 @@ for _, strategy in helpers.each_strategy() do
                 name = "key-auth",
                 service_id = service.id
               })
-              assert.same({"apikey"}, plugin.config.key_names)
+              assert.same({ "apikey" }, plugin.config.key_names)
 
               local res = assert(client:send {
                 method = "PUT",
@@ -577,11 +579,11 @@ for _, strategy in helpers.each_strategy() do
                   ["config.key_names"] = "apikey,key",
                   created_at = 1461276890000
                 },
-                headers = {["Content-Type"] = content_type}
+                headers = { ["Content-Type"] = content_type }
               })
               local body = assert.res_status(200, res)
               local json = cjson.decode(body)
-              assert.same({"apikey", "key"}, json.config.key_names)
+              assert.same({ "apikey", "key" }, json.config.key_names)
             end
           end)
 
@@ -602,7 +604,7 @@ for _, strategy in helpers.each_strategy() do
                   enabled = false,
                   created_at = 1461276890000
                 },
-                headers = {["Content-Type"] = content_type}
+                headers = { ["Content-Type"] = content_type }
               })
               local body = assert.res_status(200, res)
               local json = cjson.decode(body)
@@ -623,7 +625,7 @@ for _, strategy in helpers.each_strategy() do
                   method = "PUT",
                   path = "/services/" .. service.id .. "/plugins",
                   body = {},
-                  headers = {["Content-Type"] = content_type}
+                  headers = { ["Content-Type"] = content_type }
                 })
                 local body = assert.res_status(400, res)
                 local json = cjson.decode(body)
@@ -728,7 +730,6 @@ for _, strategy in helpers.each_strategy() do
         end)
       end)
     end)
-
   end)
 end
 

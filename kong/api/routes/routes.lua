@@ -18,6 +18,7 @@ return {
       return parent()
     end,
   },
+
   ["/routes/:routes/plugins"] = {
     on_error = function(self)
       local err = self.errors[1]
@@ -44,9 +45,7 @@ return {
     before = function(self, db, helpers)
       local id = self.params.routes
 
-      -- TODO: composite key support
       local parent_entity, _, err_t = db.routes:select({ id = id })
-
       if err_t then
         return endpoints.handle_error(err_t)
       end
@@ -59,7 +58,7 @@ return {
       self.params.route_id = parent_entity.id
     end,
 
-    GET  = function(self)
+    GET = function(self)
       crud.paginated_set(self, singletons.dao.plugins)
     end,
 

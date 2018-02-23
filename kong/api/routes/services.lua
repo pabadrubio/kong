@@ -25,6 +25,7 @@ return {
       return parent()
     end,
   },
+
   ["/services/:services/plugins"] = {
     on_error = function(self)
       local err = self.errors[1]
@@ -51,7 +52,6 @@ return {
     before = function(self, db, helpers)
       local id = self.params.services
 
-      -- TODO: composite key support
       local parent_entity, _, err_t
       if not utils.is_valid_uuid(id) then
         parent_entity, _, err_t = db.services:select_by_name(id)
@@ -72,7 +72,7 @@ return {
       self.params.service_id = parent_entity.id
     end,
 
-    GET  = function(self)
+    GET = function(self)
       crud.paginated_set(self, singletons.dao.plugins)
     end,
 
